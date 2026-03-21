@@ -34,6 +34,7 @@ orchestrator/
 - **Application layer**: orchestration use-cases (`dispatch`, `await_result`) plus messaging port abstraction.
 - **Infrastructure layer**: RabbitMQ adapter using `pika`.
 - **Presentation layer**: LangGraph wiring and executable graph.
+- **Live API layer**: FastAPI + WebSocket status stream (`orchestrator/api_server.py`).
 
 ## Run Locally
 

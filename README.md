@@ -101,6 +101,44 @@ Adjust these in `.env` if your server architecture differs.
    python orchestrator/main.py --task-type risk_evaluation --request "Evaluate risk profile for NIFTY mean-reversion strategy"
    ```
 
+## One-Command Dev Run
+
+Run frontend + backend together:
+
+```bash
+./run_dev.sh
+```
+
+What it starts:
+- Backend: Docker Compose stack (`rabbitmq` + `csharp_worker`)
+- Live API/WebSocket: FastAPI on `http://localhost:8000`
+- Frontend: Vite dev server (`frontend`, default port `5173`)
+
+Optional environment flags:
+- `FRONTEND_PORT=5174 ./run_dev.sh`
+- `API_PORT=8001 ./run_dev.sh`
+- `KEEP_BACKEND_RUNNING=1 ./run_dev.sh`
+
+## Dynamic Testing (Live API + WebSocket)
+
+1. Start full stack:
+   ```bash
+   ./run_dev.sh
+   ```
+2. Open dashboard: `http://localhost:5173`
+3. Dispatch tasks from the Status Panel form in UI.
+4. Verify live updates:
+   - RabbitMQ status toggles online/offline based on backend connectivity.
+   - Active task count increases on dispatch.
+   - Active tasks move out after worker completion (result event received).
+5. Optional API checks:
+   ```bash
+   curl http://localhost:8000/api/status
+   curl -X POST http://localhost:8000/api/tasks \
+     -H "Content-Type: application/json" \
+     -d '{"request":"smoke backtest","task_type":"backtest"}'
+   ```
+
 ## Open Source Workflow
 
 - Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)

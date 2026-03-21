@@ -11,5 +11,6 @@ public sealed class RabbitMqOptions
     public string VirtualHost { get; init; } = "/";
     public string TaskQueue { get; init; } = "task_queue";
     public string ResultsQueue { get; init; } = "results_queue";
+    public string StatusEventsQueue { get; init; } = "status_events_queue";
     public int HeavyComputationDelayMs { get; init; } = 2500;
 }

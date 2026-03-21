@@ -36,5 +36,6 @@ services:
       RabbitMq__VirtualHost: ${RABBITMQ_VHOST:-/}
       RabbitMq__TaskQueue: ${TASK_QUEUE:-task_queue}
       RabbitMq__ResultsQueue: ${RESULTS_QUEUE:-results_queue}
+      RabbitMq__StatusEventsQueue: ${STATUS_EVENTS_QUEUE:-status_events_queue}
       RabbitMq__HeavyComputationDelayMs: ${HEAVY_COMPUTATION_DELAY_MS:-2500}
     restart: unless-stopped

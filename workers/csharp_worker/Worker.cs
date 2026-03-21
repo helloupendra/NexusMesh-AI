@@ -51,6 +51,13 @@ public sealed class TaskRouterWorker : BackgroundService
             autoDelete: false,
             arguments: null);
 
+        _channel.QueueDeclare(
+            queue: _options.StatusEventsQueue,
+            durable: true,
+            exclusive: false,
+            autoDelete: false,
+            arguments: null);
+
         var consumer = new AsyncEventingBasicConsumer(_channel);
 
         // Why Task and not void?
@@ -174,6 +181,17 @@ public sealed class TaskRouterWorker : BackgroundService
             throw new InvalidOperationException("RabbitMQ channel is not initialized.");
         }
 
+        PublishToQueue(_options.ResultsQueue, result, correlationId);
+        PublishToQueue(_options.StatusEventsQueue, result, correlationId);
+    }
+
+    private void PublishToQueue(string queueName, TaskResultMessage result, string correlationId)
+    {
+        if (_channel is null)
+        {
+            throw new InvalidOperationException("RabbitMQ channel is not initialized.");
+        }
+
         var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(result));
         var props = _channel.CreateBasicProperties();
         props.ContentType = "application/json";
@@ -182,7 +200,7 @@ public sealed class TaskRouterWorker : BackgroundService
 
         _channel.BasicPublish(
             exchange: string.Empty,
-            routingKey: _options.ResultsQueue,
+            routingKey: queueName,
             basicProperties: props,
             body: body);
     }

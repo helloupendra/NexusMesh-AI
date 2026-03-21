@@ -31,6 +31,7 @@ workers/csharp_worker/
 - `backtest`: simulates heavy backtest compute using `Task.Delay`.
 - `signal_generation`: simulates fast signal hypothesis generation.
 - `risk_evaluation`: simulates portfolio/strategy risk scoring.
+- All results are also mirrored to `status_events_queue` for live dashboard updates.
 
 Set `task_type` in the incoming JSON:
 

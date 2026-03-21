@@ -13,6 +13,7 @@ class RabbitMQConfig:
     virtual_host: str
     task_queue: str
     results_queue: str
+    status_events_queue: str
     results_timeout_seconds: int
     heartbeat_seconds: int
 
@@ -27,6 +28,7 @@ def load_rabbitmq_config() -> RabbitMQConfig:
         virtual_host=os.getenv("RABBITMQ_VHOST", "/"),
         task_queue=os.getenv("TASK_QUEUE", "task_queue"),
         results_queue=os.getenv("RESULTS_QUEUE", "results_queue"),
+        status_events_queue=os.getenv("STATUS_EVENTS_QUEUE", "status_events_queue"),
         results_timeout_seconds=int(os.getenv("RESULTS_TIMEOUT_SECONDS", "120")),
         heartbeat_seconds=int(os.getenv("RABBITMQ_HEARTBEAT_SECONDS", "60")),
     )
