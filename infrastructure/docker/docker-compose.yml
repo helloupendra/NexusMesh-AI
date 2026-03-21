@@ -1,1 +1,40 @@
-# Infrastructure stack
+name: nexusmesh
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    platform: ${RABBITMQ_PLATFORM:-linux/arm64}
+    container_name: nexusmesh-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+    restart: unless-stopped
+
+  csharp_worker:
+    build:
+      context: ../../workers/csharp_worker
+      dockerfile: Dockerfile
+    platform: ${WORKER_PLATFORM:-linux/amd64}
+    container_name: nexusmesh-csharp-worker
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Port: ${RABBITMQ_PORT:-5672}
+      RabbitMq__Username: ${RABBITMQ_USERNAME:-guest}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD:-guest}
+      RabbitMq__VirtualHost: ${RABBITMQ_VHOST:-/}
+      RabbitMq__TaskQueue: ${TASK_QUEUE:-task_queue}
+      RabbitMq__ResultsQueue: ${RESULTS_QUEUE:-results_queue}
+      RabbitMq__HeavyComputationDelayMs: ${HEAVY_COMPUTATION_DELAY_MS:-2500}
+    restart: unless-stopped
