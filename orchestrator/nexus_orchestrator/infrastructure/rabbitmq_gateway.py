@@ -8,9 +8,9 @@ from pika.adapters.blocking_connection import BlockingChannel
 from pika.exceptions import AMQPError
 from pydantic import ValidationError
 
-from nexus_orchestrator.application.ports import MessageBusError, MessageTimeoutError
-from nexus_orchestrator.config import RabbitMQConfig
-from nexus_orchestrator.domain.models import TaskDispatchMessage, TaskResultMessage
+from ..application.ports import MessageBusError, MessageTimeoutError
+from ..config import RabbitMQConfig
+from ..domain.models import TaskDispatchMessage, TaskResultMessage
 
 
 _POLL_INTERVAL_SECONDS: Final[float] = 0.20

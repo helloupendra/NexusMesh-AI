@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from nexus_orchestrator.domain.models import TaskDispatchMessage, TaskResultMessage
+from ..domain.models import TaskDispatchMessage, TaskResultMessage
 
 
 class MessageBusError(RuntimeError):

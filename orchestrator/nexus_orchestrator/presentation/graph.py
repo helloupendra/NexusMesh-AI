@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from langgraph.graph import END, START, StateGraph
 
-from nexus_orchestrator.application.services import OrchestrationService
-from nexus_orchestrator.domain.models import OrchestratorGraphState
+from ..application.services import OrchestrationService
+from ..domain.models import OrchestratorGraphState
 
 
 def build_orchestration_graph(service: OrchestrationService):

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import asdict
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -60,7 +61,7 @@ def get_active_tasks() -> dict:
 def create_task(payload: CreateTaskRequest) -> dict:
     try:
         task = dispatcher.dispatch(request=payload.request, task_type=payload.task_type)
-        return task.__dict__
+        return asdict(task)
     except MessageBusError as exc:
         raise HTTPException(status_code=503, detail=f"Dispatch failed: {exc}") from exc
 

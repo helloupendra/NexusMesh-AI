@@ -8,6 +8,8 @@ ENV_FILE="$ROOT_DIR/.env"
 FRONTEND_PORT="${FRONTEND_PORT:-5173}"
 API_PORT="${API_PORT:-8000}"
 KEEP_BACKEND_RUNNING="${KEEP_BACKEND_RUNNING:-0}"
+API_RELOAD="${API_RELOAD:-0}"
+AUTO_KILL_PORTS="${AUTO_KILL_PORTS:-1}"
 COMPOSE_IMPL=""
 BACKEND_STARTED=0
 VENV_DIR="$ROOT_DIR/venv"
@@ -56,7 +58,7 @@ if [[ ! -f "$COMPOSE_FILE" ]]; then
   exit 1
 fi
 
-if ! "$VENV_PYTHON" -c "import fastapi,uvicorn,pika,pydantic,langgraph" >/dev/null 2>&1; then
+if ! "$VENV_PYTHON" -c "import fastapi,uvicorn,pika,pydantic,langgraph,websockets" >/dev/null 2>&1; then
   echo "Installing backend dependencies..."
   "$VENV_PYTHON" -m pip install -r "$ROOT_DIR/orchestrator/requirements.txt"
 fi
@@ -80,6 +82,35 @@ compose() {
     docker-compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
   else
     docker-compose -f "$COMPOSE_FILE" "$@"
+  fi
+}
+
+ensure_port_available() {
+  local port="$1"
+  local service_name="$2"
+
+  if ! command -v lsof >/dev/null 2>&1; then
+    return
+  fi
+
+  local pids
+  pids="$(lsof -nP -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)"
+
+  if [[ -z "$pids" ]]; then
+    return
+  fi
+
+  if [[ "$AUTO_KILL_PORTS" == "1" ]]; then
+    echo "Port ${port} is in use. Stopping existing process(es): ${pids}"
+    kill $pids >/dev/null 2>&1 || true
+    sleep 1
+    pids="$(lsof -nP -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)"
+  fi
+
+  if [[ -n "$pids" ]]; then
+    echo "error: ${service_name} port ${port} is already in use by PID(s): ${pids}" >&2
+    echo "hint: Stop those process(es), or run AUTO_KILL_PORTS=1 ./run_dev.sh" >&2
+    exit 1
   fi
 }
 
@@ -112,10 +143,17 @@ BACKEND_STARTED=1
 # Give services a moment before opening UI.
 sleep 2
 
+ensure_port_available "$API_PORT" "API server"
+ensure_port_available "$FRONTEND_PORT" "Frontend server"
+
 echo "Starting live API server on http://localhost:${API_PORT} ..."
 (
   cd "$ROOT_DIR"
-  "$VENV_PYTHON" -m uvicorn orchestrator.api_server:app --host 0.0.0.0 --port "$API_PORT" --reload
+  UVICORN_ARGS=(--host 0.0.0.0 --port "$API_PORT")
+  if [[ "$API_RELOAD" == "1" ]]; then
+    UVICORN_ARGS+=(--reload)
+  fi
+  "$VENV_PYTHON" -m uvicorn orchestrator.api_server:app "${UVICORN_ARGS[@]}"
 ) &
 API_PID=$!
 
@@ -126,4 +164,20 @@ echo "Starting frontend on http://localhost:${FRONTEND_PORT} ..."
 ) &
 FRONTEND_PID=$!
 
-wait -n "$API_PID" "$FRONTEND_PID"
+wait_for_first_exit() {
+  while true; do
+    if ! kill -0 "$API_PID" >/dev/null 2>&1; then
+      wait "$API_PID"
+      return $?
+    fi
+
+    if ! kill -0 "$FRONTEND_PID" >/dev/null 2>&1; then
+      wait "$FRONTEND_PID"
+      return $?
+    fi
+
+    sleep 1
+  done
+}
+
+wait_for_first_exit

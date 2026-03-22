@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pydantic import ValidationError
 
-from nexus_orchestrator.application.ports import MessageBus, MessageBusError, MessageTimeoutError
-from nexus_orchestrator.domain.models import (
+from .ports import MessageBus, MessageBusError, MessageTimeoutError
+from ..domain.models import (
     OrchestratorGraphState,
     OrchestratorState,
     TaskDispatchMessage,
