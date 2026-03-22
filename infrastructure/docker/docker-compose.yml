@@ -15,8 +15,9 @@ services:
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
-      timeout: 5s
-      retries: 8
+      timeout: 20s
+      retries: 30
+      start_period: 60s
     restart: unless-stopped
 
   csharp_worker:
@@ -26,8 +27,7 @@ services:
     platform: ${WORKER_PLATFORM:-linux/amd64}
     container_name: nexusmesh-csharp-worker
     depends_on:
-      rabbitmq:
-        condition: service_healthy
+      - rabbitmq
     environment:
       RabbitMq__Host: rabbitmq
       RabbitMq__Port: ${RABBITMQ_PORT:-5672}

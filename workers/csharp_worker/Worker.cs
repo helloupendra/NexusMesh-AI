@@ -7,6 +7,7 @@ using NexusMesh.Worker.Processing;
 using NexusMesh.Worker.RabbitMq;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Exceptions;
 
 namespace NexusMesh.Worker;
 
@@ -35,7 +36,7 @@ public sealed class TaskRouterWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _channel = _connectionManager.CreateChannel();
+        _channel = await CreateChannelWithRetryAsync(stoppingToken);
 
         _channel.QueueDeclare(
             queue: _options.TaskQueue,
@@ -215,5 +216,35 @@ public sealed class TaskRouterWorker : BackgroundService
         _channel?.Close();
         _channel?.Dispose();
         base.Dispose();
+    }
+
+    private async Task<IModel> CreateChannelWithRetryAsync(CancellationToken stoppingToken)
+    {
+        var retryDelay = TimeSpan.FromSeconds(2);
+        const int maxAttempts = 120;
+
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            stoppingToken.ThrowIfCancellationRequested();
+
+            try
+            {
+                return _connectionManager.CreateChannel();
+            }
+            catch (BrokerUnreachableException ex) when (attempt < maxAttempts)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "RabbitMQ is not reachable yet (attempt {Attempt}/{MaxAttempts}). Retrying in {DelaySeconds}s.",
+                    attempt,
+                    maxAttempts,
+                    retryDelay.TotalSeconds);
+
+                await Task.Delay(retryDelay, stoppingToken);
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"Unable to connect to RabbitMQ after {maxAttempts} attempts.");
     }
 }
