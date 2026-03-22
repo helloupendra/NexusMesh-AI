@@ -10,6 +10,7 @@ API_PORT="${API_PORT:-8000}"
 KEEP_BACKEND_RUNNING="${KEEP_BACKEND_RUNNING:-0}"
 API_RELOAD="${API_RELOAD:-0}"
 AUTO_KILL_PORTS="${AUTO_KILL_PORTS:-1}"
+DOCKER_BUILD="${DOCKER_BUILD:-0}"
 COMPOSE_IMPL=""
 BACKEND_STARTED=0
 VENV_DIR="$ROOT_DIR/venv"
@@ -137,7 +138,12 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 echo "Starting backend services (RabbitMQ + C# worker)..."
-compose up -d --build
+if [[ "$DOCKER_BUILD" == "1" ]]; then
+  echo "Docker build mode: forcing image rebuild."
+  compose up -d --build
+else
+  compose up -d
+fi
 BACKEND_STARTED=1
 
 # Give services a moment before opening UI.

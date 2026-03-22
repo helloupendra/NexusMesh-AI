@@ -42,6 +42,12 @@ function toWsUrl(apiBase) {
   return parsed.toString();
 }
 
+function shortTaskId(taskId) {
+  if (!taskId) return 'unknown';
+  if (taskId.length <= 18) return taskId;
+  return `${taskId.slice(0, 10)}...${taskId.slice(-8)}`;
+}
+
 export default function App() {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [taskRequest, setTaskRequest] = useState('Run stock backtest for AAPL');
@@ -260,14 +266,22 @@ export default function App() {
                     key={task.task_id}
                     className="rounded-xl border border-zinc-800 bg-zinc-950/70 px-3 py-2 text-xs"
                   >
-                    <div className="flex items-center justify-between">
-                      <p className="font-semibold text-zinc-200">{task.task_id}</p>
-                      <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-semibold text-cyan-300">
+                    <div className="flex items-start gap-2">
+                      <p
+                        className="min-w-0 flex-1 truncate font-mono font-semibold text-zinc-200"
+                        title={task.task_id}
+                      >
+                        {shortTaskId(task.task_id)}
+                      </p>
+                      <span className="shrink-0 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-semibold text-cyan-300">
                         {task.status}
                       </span>
                     </div>
+                    <p className="mt-1 break-all text-zinc-500" title={task.task_id}>
+                      id: {task.task_id}
+                    </p>
                     <p className="mt-1 text-zinc-400">type: {task.task_type}</p>
-                    <p className="mt-1 text-zinc-500">{task.request}</p>
+                    <p className="mt-1 break-words text-zinc-500">{task.request}</p>
                   </div>
                 ))
               )}
