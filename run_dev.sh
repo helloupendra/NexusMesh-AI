@@ -11,6 +11,7 @@ KEEP_BACKEND_RUNNING="${KEEP_BACKEND_RUNNING:-0}"
 API_RELOAD="${API_RELOAD:-0}"
 AUTO_KILL_PORTS="${AUTO_KILL_PORTS:-1}"
 DOCKER_BUILD="${DOCKER_BUILD:-0}"
+COMPOSE_ANSI="${COMPOSE_ANSI:-never}"
 COMPOSE_IMPL=""
 BACKEND_STARTED=0
 VENV_DIR="$ROOT_DIR/venv"
@@ -72,17 +73,17 @@ fi
 compose() {
   if [[ "$COMPOSE_IMPL" == "docker-compose-plugin" ]]; then
     if [[ -f "$ENV_FILE" ]]; then
-      docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
+      docker compose --ansi "$COMPOSE_ANSI" --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
     else
-      docker compose -f "$COMPOSE_FILE" "$@"
+      docker compose --ansi "$COMPOSE_ANSI" -f "$COMPOSE_FILE" "$@"
     fi
     return
   fi
 
   if [[ -f "$ENV_FILE" ]]; then
-    docker-compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
+    docker-compose --no-ansi --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
   else
-    docker-compose -f "$COMPOSE_FILE" "$@"
+    docker-compose --no-ansi -f "$COMPOSE_FILE" "$@"
   fi
 }
 
@@ -142,9 +143,13 @@ if [[ "$DOCKER_BUILD" == "1" ]]; then
   echo "Docker build mode: forcing image rebuild."
   compose up -d --build
 else
-  compose up -d
+  if ! compose up -d --no-build; then
+    echo "Backend image not found. Building once..."
+    compose up -d --build
+  fi
 fi
 BACKEND_STARTED=1
+echo "Backend services are up."
 
 # Give services a moment before opening UI.
 sleep 2
